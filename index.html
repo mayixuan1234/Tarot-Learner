@@ -180,7 +180,7 @@
   <div class="quiz" id="divBox" style="max-width:760px">
     <h3>🔮 三牌阵 · 现状 / 阻碍 / 建议</h3>
     <div class="qh">心里默念你的问题，洗牌后从背面牌堆里凭直觉点三张，依次对应「现状 → 阻碍 → 建议」</div>
-    <input id="dvQ" class="input" style="width:100%;margin-bottom:14px" placeholder="✍️ 写下你想问的问题（可选），如：这份工作我该不该去？">
+    <input id="dvQ" class="input" style="width:100%;margin-bottom:14px" placeholder="">
     <div id="dvDeck" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:120px"></div>
     <div class="qbtns" style="margin-top:14px">
       <button id="dvShuffle" class="btn">🃏 洗牌 · 发牌</button>
@@ -233,8 +233,8 @@
     </div>
     <label style="font-size:13px;color:var(--muted)">选择服务商（自动填好地址和模型）</label>
     <select id="aiPreset" class="input" style="width:100%;margin:4px 0 12px">
-      <option value="glm">智谱 GLM（OpenAI兼容，便宜好用）</option>
-      <option value="glm_anthropic">智谱 GLM（Claude Code 同款 Anthropic 格式）</option>
+      <option value="glm">智谱 GLM（OpenAI兼容）</option>
+      <option value="glm_anthropic">智谱 GLM（Anthropic格式，推荐）</option>
       <option value="deepseek">DeepSeek（性价比高）</option>
       <option value="qwen">通义千问 DashScope</option>
       <option value="openai">OpenAI 官方</option>
@@ -690,8 +690,8 @@ dvReset.onclick=()=>{dvDeck.innerHTML='';dvResult.innerHTML='';dvHint.textConten
 const AI_KEY='tarot_ai_cfg';
 /* 服务商预设：apiType=openai 走 /chat/completions，apiType=anthropic 走 /v1/messages */
 const PRESETS={
-  glm:            {apiType:'openai',      base:'https://open.bigmodel.cn/api/paas/v4',           model:'glm-4.5-air'},
-  glm_anthropic:  {apiType:'anthropic',   base:'https://open.bigmodel.cn/api/anthropic',         model:'glm-4.5-air'},
+  glm:            {apiType:'openai',      base:'https://open.bigmodel.cn/api/paas/v4',           model:'glm-4-flash'},
+  glm_anthropic:  {apiType:'anthropic',   base:'https://open.bigmodel.cn/api/anthropic',         model:'glm-4-flash'},
   deepseek:       {apiType:'openai',      base:'https://api.deepseek.com/v1',                    model:'deepseek-chat'},
   qwen:           {apiType:'openai',      base:'https://dashscope.aliyuncs.com/compatible-mode/v1', model:'qwen-plus'},
   openai:         {apiType:'openai',      base:'https://api.openai.com/v1',                       model:'gpt-4o-mini'},
