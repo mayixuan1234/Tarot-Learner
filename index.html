@@ -101,6 +101,27 @@
   .dv-sum{margin-top:14px;background:rgba(214,175,91,.08);border-left:3px solid var(--gold);border-radius:8px;padding:12px 14px;font-size:13.5px;line-height:1.7}
   .shuffling{animation:shf .4s infinite}
   @keyframes shf{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(3deg)}100%{transform:translateY(0) rotate(0)}}
+    /* 扇形牌阵 */
+  .fan-wrap{position:relative;height:300px;margin:10px 30px;overflow:hidden;user-select:none;display:flex;justify-content:center;align-items:flex-end}
+  .wheel-card{position:absolute;left:50%;top:50%;width:60px;aspect-ratio:3/5;border-radius:5px;cursor:pointer;
+    background:repeating-linear-gradient(45deg,#2b2140,#2b2140 5px,#33284d 5px,#33284d 10px);
+    border:1px solid #4a3d6e;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;
+    box-shadow:0 4px 12px rgba(0,0,0,.5);transition:filter .2s}
+  .wheel-card .wnum{font-size:11px;color:var(--gold2);opacity:.8;font-weight:600}
+  .wheel-card:hover{filter:brightness(1.4);border-color:var(--gold)}
+  .wheel-card.picked{opacity:.12;pointer-events:none}
+  .dv-slots{display:flex;gap:16px;justify-content:center;margin:16px 0;flex-wrap:wrap;min-height:180px}
+  .dv-slot{width:130px;text-align:center;background:rgba(0,0,0,.15);border:2px dashed var(--line);border-radius:12px;padding:10px;min-height:195px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .dv-slot.filled{border-style:solid;border-color:var(--gold);background:rgba(214,175,91,.06)}
+  .dv-slot img{width:110px;border-radius:8px;box-shadow:var(--shadow)}
+  .dv-slot img.rev{transform:rotate(180deg)}
+  .counter{font-size:22px;font-weight:700;color:var(--gold2);text-align:center;margin:8px 0}
+  @media(max-width:600px){
+    .fan-wrap{height:320px}
+    .fan-card{width:55px;font-size:11px;bottom:20px}
+    .dv-slot{width:95px;min-height:150px}
+    .dv-slot img{width:85px}
+  }
   .empty{text-align:center;color:var(--muted);padding:60px 10px}
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;opacity:.7}
   .countline{text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:14px}
@@ -114,7 +135,14 @@
     <div class="sub">标准分类 · 单张牌面详解 · 正逆位 · 抽牌自测 · 三牌阵占卜</div>
   </header>
 
-  <div class="ctrl">
+
+  <!-- 顶部Tab切换 -->
+  <div style="display:flex;gap:12px;justify-content:center;margin:16px 0 20px">
+    <button id="tabLib" onclick="switchTab('lib')" style="padding:10px 32px;border-radius:25px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#b8943f);color:#1a1025">📚 牌库图鉴</button>
+    <button id="tabDiv" onclick="switchTab('div')" style="padding:10px 32px;border-radius:25px;border:1px solid var(--line);font-size:15px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted)">🔮 开始占卜</button>
+  </div>
+
+  <div class="ctrl" id="ctrlBar">
     <input id="search" class="input" placeholder="🔍 搜牌名 / 关键词，如：工作、面试、恋人…">
     <select id="suitFilter" class="input">
       <option value="">全部元素</option>
@@ -124,77 +152,35 @@
       <option value="风">风 · 宝剑</option>
       <option value="火">火 · 权杖</option>
     </select>
-    <button id="quizBtn" class="btn">🔮 抽一张 · 自测</button>
     <button id="aiCfgBtn" class="btn ghost">⚙️ AI 配置</button>
   </div>
 
+
+  <!-- 牌库区 -->
+  <div id="libView">
   <div id="stdTabs" class="gtabs"></div>
   <div id="countLine" class="countline"></div>
   <div id="grid" class="grid"></div>
-
-  <!-- 抽一张 -->
-  <div class="quiz" id="quizBox">
-    <h3>🔮 抽一张 · 今日牌</h3>
-    <div class="qh">点「抽一张」自动翻牌，看看今天的指引</div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:12.5px;color:var(--muted);cursor:pointer"><input type="checkbox" id="qPractice" style="cursor:pointer;vertical-align:middle"> 自测模式（先看牌背回忆）</label>
-    </div>
-    <div class="qcard" id="qcard"><div class="backk">✧</div></div>
-    <div class="qresult" id="qresult"></div>
-    <div class="qbtns">
-      <button id="qDraw" class="btn">🃏 抽一张</button>
-      <button id="qReveal" class="btn" style="display:none">揭晓答案</button>
-    </div>
   </div>
 
-  <!-- 大众占卜 -->
-  <div class="quiz" id="crowdBox" style="max-width:760px">
-    <h3>✨ 大众占卜 · 凭直觉选一组</h3>
-    <div class="qh">默念你的问题，从 A / B / C 三张牌里选一个最有感觉的，点进去看解读</div>
-    <div id="crowdPick" style="display:flex;gap:16px;justify-content:center;margin:18px 0;flex-wrap:wrap">
-      <div class="crowdOpt" data-opt="0" style="width:110px;aspect-ratio:3/5;border-radius:10px;cursor:pointer;background:repeating-linear-gradient(45deg,#2b2140,#2b2140 8px,#33284d 8px,#33284d 16px);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold);font-size:18px;font-weight:700;transition:.2s">
-        <div style="font-size:28px">✧</div><div style="margin-top:6px;font-size:14px">A</div>
-      </div>
-      <div class="crowdOpt" data-opt="1" style="width:110px;aspect-ratio:3/5;border-radius:10px;cursor:pointer;background:repeating-linear-gradient(45deg,#2b2140,#2b2140 8px,#33284d 8px,#33284d 16px);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold);font-size:18px;font-weight:700;transition:.2s">
-        <div style="font-size:28px">✦</div><div style="margin-top:6px;font-size:14px">B</div>
-      </div>
-      <div class="crowdOpt" data-opt="2" style="width:110px;aspect-ratio:3/5;border-radius:10px;cursor:pointer;background:repeating-linear-gradient(45deg,#2b2140,#2b2140 8px,#33284d 8px,#33284d 16px);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold);font-size:18px;font-weight:700;transition:.2s">
-        <div style="font-size:28px">☽</div><div style="margin-top:6px;font-size:14px">C</div>
-      </div>
-    </div>
-    <div id="crowdResult" style="margin-top:10px;text-align:left"></div>
-    <div class="qbtns" style="margin-top:10px">
-      <button id="crowdReset" class="btn ghost" style="display:none">重新选</button>
-    </div>
-  </div>
-
-  <!-- 星座 -->
-  <div class="quiz" id="zodiacBox" style="max-width:760px">
-    <h3>🌟 星座 × 塔罗 · 今日指引</h3>
-    <div class="qh">选你的星座，抽一张牌看今天的能量提示</div>
-    <div id="zodiacGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin:14px 0"></div>
-    <div id="zodiacResult" style="text-align:left;display:none"></div>
-  </div>
-
-  <!-- divination -->
+  <!-- 占卜区 -->
+  <div id="divView" style="display:none">
   <div class="quiz" id="divBox" style="max-width:760px">
     <h3>🔮 三牌阵 · 现状 / 阻碍 / 建议</h3>
-    <div class="qh">心里默念你的问题，洗牌后从背面牌堆里凭直觉点三张，依次对应「现状 → 阻碍 → 建议」</div>
+    <div class="qh">心里默念你的问题，从扇形牌堆里凭直觉点三张</div>
     <input id="dvQ" class="input" style="width:100%;margin-bottom:14px" placeholder="">
-    <div id="dvDeck" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:120px"></div>
-    <div class="qbtns" style="margin-top:14px">
-      <button id="dvShuffle" class="btn">🃏 洗牌 · 发牌</button>
-      <button id="dvReset" class="btn ghost" style="display:none">重新抽</button>
+    <div class="counter" id="dvCount">0 / 3 已选</div>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px">👆 左右拖动牌轮 · 凭直觉点击选牌</div>
+    <div style="text-align:center;margin-bottom:10px"><button id="dvShuffle" class="btn">🃏 洗牌</button></div>
+    <div class="fan-wrap" id="dvDeck"></div>
+    <div class="dv-slots" id="dvSlots">
+      <div class="dv-slot" data-pos="0"><div style="font-size:12px;color:var(--muted)">现状</div></div>
+      <div class="dv-slot" data-pos="1"><div style="font-size:12px;color:var(--muted)">阻碍</div></div>
+      <div class="dv-slot" data-pos="2"><div style="font-size:12px;color:var(--muted)">建议</div></div>
     </div>
-    <div id="dvPickHint" class="qh" style="margin-top:10px;color:var(--gold2)"></div>
     <div id="dvResult" style="margin-top:16px;text-align:left"></div>
   </div>
 
-    <div style="max-width:760px;margin:30px auto 0;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 18px">
-    <div style="font-size:14px;color:var(--gold2);margin-bottom:10px">🔮 大众占卜记录 · 发帖素材库</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">每期手动整理：问题 + A/B/C 牌面 + 解读文案，方便直接复制发小红书</div>
-    <div id="crowdLogList" style="text-align:left"></div>
-  </div>
 
   <footer style="margin-top:30px">
 
@@ -259,6 +245,21 @@
 </div>
 
 <script>
+function switchTab(t){
+  document.getElementById('libView').style.display=t==='lib'?'':'none';
+  document.getElementById('divView').style.display=t==='div'?'':'none';
+  var active='linear-gradient(135deg,var(--gold),#b8943f)', inactive='transparent';
+  var ac='#1a1025', ic='var(--muted)';
+  document.getElementById('tabLib').style.background=t==='lib'?active:inactive;
+  document.getElementById('tabLib').style.color=t==='lib'?ac:ic;
+  document.getElementById('tabLib').style.border=t==='lib'?'none':'1px solid var(--line)';
+  document.getElementById('tabDiv').style.background=t==='div'?active:inactive;
+  document.getElementById('tabDiv').style.color=t==='div'?ac:ic;
+  document.getElementById('tabDiv').style.border=t==='div'?'none':'1px solid var(--line)';
+  document.getElementById("ctrlBar").style.display=t==="lib"?"flex":"none"; if(t==="div" && document.querySelectorAll(".wheel-card").length===0){setTimeout(function(){dvShuffleDeck(); setTimeout(function(){dvRenderWheel();},600);},300);}
+  window.scrollTo({top:0}); setTimeout(function(){window.dispatchEvent(new Event('resize'));},400);
+}
+
 /* ================= 数据 ================= */
 /* f=文件名  n=中文  e=英文  s=花色  el=元素  u=正位  r=逆位  k=关键词 */
 const CARDS = [
@@ -447,9 +448,12 @@ function renderStdTabs(){
   stdTabs.querySelectorAll('.gtab').forEach(b=>b.onclick=()=>{curStdFilter=b.dataset.s;render();});
 }
 
+let cardNum=0;
 function cardHTML(c){
+  cardNum++;
   return `<div class="card" data-f="${c.f}">
-    <img src="cards/${c.f}" alt="${c.n}" loading="lazy">
+    <div style="position:absolute;top:4px;left:6px;font-size:10px;color:var(--gold2);opacity:.7">${cardNum}</div>
+    <img src="cards/${c.f}" alt="${c.n}" >
     <div class="nm">${c.n}</div><div class="en">${c.e}</div>
   </div>`;
 }
@@ -462,6 +466,7 @@ function matches(c){
 }
 
 function render(){
+  cardNum=0;
   renderStdTabs();
   let html='', total=0;
   grid.style.display='block';
@@ -509,182 +514,130 @@ ovl.onclick=e=>{ if(e.target===ovl) ovl.classList.remove('on'); };
 document.getElementById('swUpr').onclick=()=>{curUpr=1;swUpr.classList.add('on');swRev.classList.remove('on');showMean();};
 document.getElementById('swRev').onclick=()=>{curUpr=0;swRev.classList.add('on');swUpr.classList.remove('on');showMean();};
 
-/* --- 抽一张 --- */
-const qCard=document.getElementById('qcard'), qResult=document.getElementById('qresult'),
-      qReveal=document.getElementById('qReveal'), qDraw=document.getElementById('qDraw');
-let qCardObj=null;
-function qShow(){
-  if(!qCardObj)return;
-  qCard.innerHTML=`<img src="cards/${qCardObj.f}">`;
-  qResult.innerHTML=`<div class="qn">${qCardObj.n} · ${qCardObj.e}</div>
-    <div class="qm"><b style="color:#d6af5b">正位：</b>${qCardObj.u}</div>
-    ${qCardObj.r?`<div class="qm" style="margin-top:4px"><b style="color:#d6af5b">逆位：</b>${qCardObj.r}</div>`:''}`;
-  qReveal.style.display='none';
-}
-function qDrawCard(){
-  qCardObj=CARDS[Math.floor(Math.random()*CARDS.length)];
-  qResult.innerHTML='';
-  qCard.innerHTML='<div class="backk">✧</div>';
-  const b=qCard.querySelector('.backk'); if(b)b.classList.add('shuffling');
-  const practice=document.getElementById('qPractice').checked;
-  if(practice){
-    setTimeout(()=>{const bb=qCard.querySelector('.backk'); if(bb)bb.classList.remove('shuffling');},500);
-    qReveal.style.display='inline-block';
-  } else {
-    setTimeout(()=>{
-      const bb=qCard.querySelector('.backk'); if(bb)bb.classList.remove('shuffling');
-      qShow();
-    }, 800);
-  }
-}
-qDraw.onclick=qDrawCard;
-qReveal.onclick=qShow;
-document.getElementById('quizBtn').onclick=()=>{
-  qDrawCard();
-  document.getElementById('quizBox').scrollIntoView({behavior:'smooth',block:'center'});
-};
-
-/* --- 大众占卜 --- */
-const crowdResult=document.getElementById('crowdResult'),
-      crowdReset=document.getElementById('crowdReset');
-let crowdPicked=false;
-document.querySelectorAll('.crowdOpt').forEach(el=>{
-  el.onclick=()=>{
-    if(crowdPicked) return;
-    crowdPicked=true;
-    const opt=el.dataset.opt;
-    document.querySelectorAll('.crowdOpt').forEach(o=>o.style.pointerEvents='none');
-    el.style.borderColor='var(--gold)';
-    el.style.boxShadow='0 0 20px rgba(214,175,91,.4)';
-    const c=CARDS[Math.floor(Math.random()*CARDS.length)];
-    const upr=Math.random()<0.5?1:0;
-    crowdResult.innerHTML=`
-      <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
-        <img src="cards/${c.f}" style="width:140px;border-radius:10px;box-shadow:var(--shadow);${upr?'':'transform:rotate(180deg)'}">
-        <div style="flex:1;min-width:220px;text-align:left">
-          <div style="font-size:18px;font-weight:700;color:var(--gold2)">你选了 ${opt==='0'?'A':opt==='1'?'B':'C'} → ${c.n}（${upr?'正位':'逆位'}）</div>
-          <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">${c.e} · ${c.el}</div>
-          <div style="background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.7">
-            <b style="color:var(--gold2);display:block;margin-bottom:6px">✨ 这组的朋友看过来</b>
-            ${upr? c.u : (c.r||c.u)}
-            <br><br><span style="color:var(--muted);font-size:12.5px">这组牌的能量指向${c.el}元素，最近可以多关注${c.k.join('、')}相关的事。</span>
-          </div>
-        </div>
-      </div>`;
-    crowdReset.style.display='inline-block';
-  };
-});
-crowdReset.onclick=()=>{
-  crowdPicked=false;
-  crowdResult.innerHTML='';
-  crowdReset.style.display='none';
-  document.querySelectorAll('.crowdOpt').forEach(o=>{
-    o.style.pointerEvents=''; o.style.borderColor=''; o.style.boxShadow='';
-  });
-};
-
-/* --- 星座 × 塔罗 --- */
-const ZODIACS=[
-  ['♈','白羊','火','热情冲劲'],['♉','金牛','土','稳扎稳打'],
-  ['♊','双子','风','好奇灵活'],['♋','巨蟹','水','温柔细腻'],
-  ['♌','狮子','火','自信耀眼'],['♍','处女','土','完美细致'],
-  ['♎','天秤','风','平衡抉择'],['♏','天蝎','水','深刻敏锐'],
-  ['♐','射手','火','自由探索'],['♑','摩羯','土','务实上进'],
-  ['♒','水瓶','风','独立创新'],['♓','双鱼','水','浪漫直觉']
-];
-const zGrid=document.getElementById('zodiacGrid'),
-      zResult=document.getElementById('zodiacResult');
-ZODIACS.forEach(([sym,name,el,trait])=>{
-  const b=document.createElement('button');
-  b.style.cssText='padding:10px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-size:13px;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:3px';
-  b.innerHTML=`<span style="font-size:22px">${sym}</span><span>${name}</span><span style="font-size:10px;color:var(--muted)">${el}</span>`;
-  b.onmouseenter=()=>{b.style.borderColor='var(--gold)';};
-  b.onmouseleave=()=>{b.style.borderColor='';};
-  b.onclick=()=>{
-    const c=CARDS[Math.floor(Math.random()*CARDS.length)];
-    const upr=Math.random()<0.5?1:0;
-    zResult.style.display='block';
-    zResult.innerHTML=`
-      <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
-        <img src="cards/${c.f}" style="width:130px;border-radius:10px;box-shadow:var(--shadow);${upr?'':'transform:rotate(180deg)'}">
-        <div style="flex:1;min-width:220px;text-align:left">
-          <div style="font-size:17px;font-weight:700;color:var(--gold2)">${sym} ${name}座 · 今日指引</div>
-          <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">今日牌：${c.n}（${upr?'正位':'逆位'}）· ${c.e}</div>
-          <div style="background:rgba(214,175,91,.08);border-left:3px solid var(--gold);border-radius:8px;padding:12px 14px;font-size:13.5px;line-height:1.7">
-            ${name}座今天的${el}元素能量，配合这张「${c.n}」——${upr?c.u:c.r}
-            <br><br><span style="color:var(--muted);font-size:12.5px">${trait}的你，今天可以${c.k.join('、')}，顺势而为。</span>
-          </div>
-        </div>
-      </div>`;
-    zResult.scrollIntoView({behavior:'smooth',block:'center'});
-  };
-  zGrid.appendChild(b);
-});
-
-/* --- divination --- */
+/* --- divination 牌轮 --- */
 const dvDeck=document.getElementById('dvDeck'), dvResult=document.getElementById('dvResult'),
-      dvHint=document.getElementById('dvPickHint'), dvShuffle=document.getElementById('dvShuffle'),
-      dvReset=document.getElementById('dvReset');
+      dvShuffle=document.getElementById('dvShuffle'), dvCount=document.getElementById('dvCount');
 let dvPicks=[];
 const DV_POS=['现状','阻碍','建议'];
+let dvRot=0, dvDragging=false, dvStartX=0, dvStartRot=0;
+
 function dvShuffleDeck(){
-  dvPicks=[]; dvResult.innerHTML=''; dvReset.style.display='none';
+  dvPicks=[]; dvResult.innerHTML=''; dvShuffle.textContent='🃏 重新洗牌';
+  dvCount.textContent='0 / 3 已选';
+  dvRot=0;
+  document.querySelectorAll('.dv-slot').forEach((s,i)=>{
+    s.classList.remove('filled');
+    s.innerHTML='<div style="font-size:12px;color:var(--muted)">'+DV_POS[i]+'</div>';
+  });
   dvDeck.innerHTML='';
-  for(let i=0;i<10;i++){
-    const c=document.createElement('div');
-    c.className='dvcard shuffling'; c.textContent='✦';
-    c.style.animationDelay=(i*0.04)+'s';
-    dvDeck.appendChild(c);
+  var cardPool=[...Array(78).keys()].sort(function(){return Math.random()-0.5});
+  for(var i=0;i<78;i++){
+    (function(posIdx,cardIdx){
+      var c=document.createElement('div');
+      c.className='wheel-card';
+      c.innerHTML='<span class="wnum">'+(posIdx+1)+'</span>';
+      c.dataset.card=cardIdx;
+      c.onclick=function(){dvPick(c)};
+      dvDeck.appendChild(c);
+    })(i,cardPool[i]);
   }
-  dvHint.textContent='洗牌中…';
-  setTimeout(()=>{
-    [...dvDeck.children].forEach(el=>{
-      el.classList.remove('shuffling');
-      el.onclick=()=>dvPick(el);
-    });
-    dvHint.textContent='凭直觉点 3 张牌（已选 0 / 3）';
-  }, 600);
+  // Pile animation: cards start at center
+  var cards=dvDeck.querySelectorAll('.wheel-card');
+  var cx=dvDeck.offsetWidth/2, cy=dvDeck.offsetHeight/2;
+  cards.forEach(function(c,i){
+    c.style.left=(cx+(Math.random()-0.5)*80)+'px';
+    c.style.top=(cy+(Math.random()-0.5)*50)+'px';
+    c.style.transform='translate(-50%,-50%) rotate('+((Math.random()-0.5)*40)+'deg)';
+  });
+  // Fan out after 800ms
+  setTimeout(function(){ dvRenderWheel(); dvDeck.style.opacity='1'; }, 800);
+  setTimeout(function(){ dvRenderWheel(); }, 1600);
+  // drag events
+  dvDeck.onmousedown=function(e){dvDragging=true;dvStartX=e.clientX;dvStartRot=dvRot};
+  window.onmousemove=function(e){
+    if(!dvDragging)return;
+    dvRot=dvStartRot+(e.clientX-dvStartX)*0.5;
+    dvRenderWheel();
+  };
+  window.onmouseup=function(){dvDragging=false};
+  dvDeck.ontouchstart=function(e){dvDragging=true;dvStartX=e.touches[0].clientX;dvStartRot=dvRot};
+  dvDeck.ontouchmove=function(e){
+    if(!dvDragging)return;
+    dvRot=dvStartRot+(e.touches[0].clientX-dvStartX)*0.5;
+    dvRenderWheel();
+    e.preventDefault();
+  };
+  dvDeck.ontouchend=function(){dvDragging=false}; window.onresize=function(){if(document.querySelector('.wheel-card'))dvRenderWheel()};
 }
-function dvPick(el){
+
+function dvFanIn(cards){
+  dvRot=0;
+  setTimeout(function(){ dvRenderWheel(); }, 500); setTimeout(function(){ dvRenderWheel(); }, 1200);
+}
+
+
+function dvRenderWheel(){
+  const cards=dvDeck.querySelectorAll('.wheel-card');
+  const R=200;
+  const cx=dvDeck.offsetWidth/2;
+  const cy=dvDeck.offsetHeight+60;
+  cards.forEach((c,i)=>{
+    const angle=dvRot+i*(360/82);
+    const rad=angle*Math.PI/180;
+    const isPicked=c.classList.contains('picked');
+    const lift=isPicked?-50:0;
+    const rr=R+lift;
+    c.style.left=(cx+Math.sin(rad)*rr)+'px';
+    c.style.top=(cy-Math.cos(rad)*rr)+'px';
+    c.style.transform='translate(-50%,-50%) rotate('+angle+'deg)';
+    c.style.zIndex=isPicked?999:i;
+    // number label at outer radius
+    let num=c.querySelector('.wnum');
+    if(!num){num=document.createElement('span');num.className='wnum';c.appendChild(num);}
+    num.style.position='absolute';
+    num.style.bottom='108%';
+    num.style.left='50%';
+    num.style.transform='translateX(-50%)';
+    num.style.rotate=(-angle)+'deg';
+  });
+}
+
+function dvPick(el, idx){
   if(el.classList.contains('picked')||dvPicks.length>=3) return;
   el.classList.add('picked');
-  const card=CARDS[Math.floor(Math.random()*CARDS.length)];
-  dvPicks.push({card, upr:Math.random()<0.5?1:0});
-  dvHint.textContent=`凭直觉点 3 张牌（已选 ${dvPicks.length} / 3）`;
+  const card=CARDS[parseInt(el.dataset.card)];
+  const upr=Math.random()<0.5?1:0;
+  const pos=dvPicks.length;
+  dvPicks.push({card, upr, pos});
+  dvCount.textContent=`${dvPicks.length} / 3 已选`;
+  // fill slot
+  const slot=document.querySelector(`.dv-slot[data-pos="${pos}"]`);
+  slot.classList.add('filled');
+  slot.innerHTML=`<div style="font-size:12px;color:var(--gold2)">${DV_POS[pos]}</div>
+    <img src="cards/${card.f}" class="${upr?'':'rev'}">
+    <div style="font-size:13px;font-weight:700;margin-top:4px">${card.n}</div>
+    <div style="font-size:10px;color:var(--muted)">${upr?'正位':'逆位'}</div>`;
   if(dvPicks.length===3) dvShowResult();
 }
+
 function dvShowResult(){
-  dvReset.style.display='inline-block';
   const q=document.getElementById('dvQ').value.trim();
-  const slots=dvPicks.map((p,i)=>{
-    const c=p.card, mean=p.upr?c.u:(c.r||'需结合上下文灵活解读');
-    return `<div class="dv-slot">
-      <div class="dv-pos">${DV_POS[i]}</div>
-      <img src="cards/${c.f}" class="${p.upr?'':'rev'}">
-      <div class="dv-nm">${c.n}</div>
-      <div class="dv-or">${p.upr?'正位':'逆位'} · ${c.e}</div>
-      <div class="dv-mn">${mean}</div>
-    </div>`;
-  }).join('');
   const eles=[...new Set(dvPicks.map(p=>p.card.el))].join(' / ');
-  dvResult.innerHTML=`<div style="display:flex;gap:12px;flex-wrap:wrap">${slots}</div>
-    <div class="dv-sum"><b style="color:var(--gold2)">综合解读</b><br>
+  dvResult.innerHTML=`<div class="dv-sum"><b style="color:var(--gold2)">综合解读</b><br>
     ${q?`<div style="margin-bottom:6px;color:var(--muted)">你问：${q}</div>`:''}
     三张牌的元素能量集中在「${eles}」。<br>
-    · <b>现状</b>：${dvPicks[0].card.n}${dvPicks[0].upr?'（正位）':'（逆位）'} —— ${dvPicks[0].card.u}<br>
-    · <b>阻碍</b>：${dvPicks[1].card.n}${dvPicks[1].upr?'（正位）':'（逆位）'} —— ${dvPicks[1].card.u}<br>
-    · <b>建议</b>：${dvPicks[2].card.n}${dvPicks[2].upr?'（正位）':'（逆位）'} —— ${dvPicks[2].card.u}<br>
+    · <b>现状</b>：${dvPicks[0].card.n}${dvPicks[0].upr?'（正位）':'（逆位）'} —— ${dvPicks[0].upr?dvPicks[0].card.u:dvPicks[0].card.r}<br>
+    · <b>阻碍</b>：${dvPicks[1].card.n}${dvPicks[1].upr?'（正位）':'（逆位）'} —— ${dvPicks[1].upr?dvPicks[1].card.u:dvPicks[1].card.r}<br>
+    · <b>建议</b>：${dvPicks[2].card.n}${dvPicks[2].upr?'（正位）':'（逆位）'} —— ${dvPicks[2].upr?dvPicks[2].card.u:dvPicks[2].card.r}<br>
     <span style="color:var(--muted);font-size:12px">解读基于牌义自动拼合，仅作学习参考。</span>
     </div>
     <div style="text-align:center;margin-top:14px">
       <button id="dvAI" class="btn">✨ AI 深度解读</button>
       <div id="dvAIOut" style="margin-top:12px;text-align:left;background:rgba(214,175,91,.08);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.7;display:none;white-space:pre-wrap"></div>
     </div>`;
-  dvHint.textContent='';
   document.getElementById('dvAI').onclick=dvAIInterpret;
 }
 dvShuffle.onclick=dvShuffleDeck;
-dvReset.onclick=()=>{dvDeck.innerHTML='';dvResult.innerHTML='';dvHint.textContent='';dvReset.style.display='none';dvPicks=[];};
 
 /* --- AI 配置 --- */
 const AI_KEY='tarot_ai_cfg';
@@ -750,7 +703,23 @@ async function dvAIInterpret(){
   out.textContent='✨ 星象解读中，请稍候…';
   const q=document.getElementById('dvQ').value.trim()||'（用户未写具体问题）';
   const cardsDesc=dvPicks.map((p,i)=>`${DV_POS[i]}位：${p.card.n}（${p.upr?'正位':'逆位'}）— ${p.upr?p.card.u:(p.card.r||'逆位含义需结合上下文')}`).join('\n');
-  const sys='你是一位温柔、有同理心的韦特塔罗牌师。请根据用户抽出的三张牌（现状/阻碍/建议）和他的问题，写一段200-350字、口语化、有温度的中文解读。先共情，再逐张分析，最后给一句可执行的建议。不要说教，不要套话。';
+  const sys=`你是一位温柔、有同理心的韦特塔罗牌师。请根据用户抽出的三张牌和问题，按以下结构输出：
+
+✨逐张解读
+每张牌单独一段：牌名（正/逆位）+ 这张牌在这个问题里具体意味着什么，2-3句话，口语化，结合用户处境。
+
+综合结论
+分条列出：
+✅建议：一句话核心建议
+📍重心：该怎么做（具体行动）
+💛心态：该保持什么心态
+⚠️避雷：不要做什么
+
+💡小总结：一句话总结（进可攻退可守那种）
+
+最后加一句引导：要不要再抽牌看看相关追问？
+
+不要说教不要套话，像朋友聊天一样。`
   const user=`我的问题：${q}\n\n三张牌：\n${cardsDesc}\n\n请结合这三张牌的正逆位，给我一段贴合我处境的解读。`;
   try{
     let r;
@@ -778,51 +747,7 @@ async function dvAIInterpret(){
   }
 }
 
-/* --- 大众占卜记录（手动整理，发帖素材） --- */
-/* 每期一条：date=日期, question=问题, groups=[{card:文件名, label:'A', text:解读文案}] */
-const CROWD_LOGS = [
-  /*
-  {
-    date: "2026-10-21",
-    question: "这周你需要知道什么？",
-    groups: [
-      { card: "19_Sun.jpg", label: "A", text: "选A的朋友，太阳牌正位——这周状态在线，自信心和好运都在线，适合主动出击。" },
-      { card: "18_Moon.jpg", label: "B", text: "选B的朋友，月亮牌——这周有迷雾，别急着做决定，先观察清楚再说。" },
-      { card: "17_Star.jpg", label: "C", text: "选C的朋友，星星牌——希望来了，之前的努力开始有方向感，保持节奏就好。" }
-    ]
-  }
-  */
-];
-
-function renderCrowdLogs(){
-  const box=document.getElementById('crowdLogList');
-  if(!CROWD_LOGS.length){
-    box.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">还没有记录。以后每期大众占卜整理好内容，告诉我加进来～</div>';
-    return;
-  }
-  box.innerHTML=CROWD_LOGS.map((log,idx)=>{
-    const cards=log.groups.map(g=>{
-      const c=CARDS.find(x=>x.f===g.card);
-      return `<div style="flex:1;min-width:120px;text-align:center">
-        <img src="cards/${g.card}" style="width:90px;border-radius:8px;margin:0 auto;display:block;box-shadow:var(--shadow)">
-        <div style="font-size:12px;color:var(--gold2);margin-top:6px;font-weight:700">${g.label}</div>
-        <div style="font-size:12px;color:var(--muted)">${c?c.n:g.card}</div>
-        <div style="font-size:12px;margin-top:6px;text-align:left;line-height:1.6">${g.text}</div>
-      </div>`;
-    }).join('');
-    return `<div style="background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:700;color:var(--gold2);margin-bottom:4px">${log.date} · ${log.question}</div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px">${cards}</div>
-      <button onclick="navigator.clipboard.writeText(this.parentElement.innerText);this.textContent='已复制✅';setTimeout(()=>this.textContent='复制文案',2000)" style="margin-top:10px;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--gold2);font-size:12px;cursor:pointer">复制文案</button>
-    </div>`;
-  }).join('');
-}
-
-/* --- init --- */
-renderCrowdLogs();
-search.oninput=()=>render();
-suitFilter.onchange=()=>render();
-render();
+render(); dvShuffleDeck();
 </script>
 </body>
 </html>
