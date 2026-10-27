@@ -56,7 +56,7 @@
   .sectitle{font-size:19px;font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
   .sectitle .dot{width:10px;height:10px;border-radius:50%;display:inline-block;box-shadow:0 0 10px currentColor}
   .ovl{position:fixed;inset:0;background:rgba(8,6,14,.78);backdrop-filter:blur(4px);display:none;
-    align-items:center;justify-content:center;z-index:50;padding:20px}
+    align-items:center;justify-content:center;z-index:9999;padding:20px}
   .ovl.on{display:flex}
   .modal{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--gold);border-radius:18px;
     max-width:520px;width:100%;max-height:92vh;overflow:auto;box-shadow:var(--shadow);padding:24px;position:relative;animation:pop .25s}
@@ -171,7 +171,7 @@
     <input id="dvQ" class="input" style="width:100%;margin-bottom:14px" placeholder="">
     <div class="counter" id="dvCount">0 / 3 已选</div>
     <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px">👆 左右拖动牌轮 · 凭直觉点击选牌</div>
-    <div style="text-align:center;margin-bottom:10px"><button id="dvShuffle" class="btn">🃏 洗牌</button></div>
+    <div style="text-align:center;margin-bottom:10px;display:flex;gap:10px;justify-content:center"><button id="dvShuffle" class="btn">🃏 洗牌</button><button id="dvHistBtn" class="btn ghost">📜 历史记录</button></div>
     <div class="fan-wrap" id="dvDeck"></div>
     <div class="dv-slots" id="dvSlots">
       <div class="dv-slot" data-pos="0"><div style="font-size:12px;color:var(--muted)">现状</div></div>
@@ -219,6 +219,7 @@
     </div>
     <label style="font-size:13px;color:var(--muted)">选择服务商（自动填好地址和模型）</label>
     <select id="aiPreset" class="input" style="width:100%;margin:4px 0 12px">
+      <option value="local">🏠 本地服务器（推荐，不用VPN）</option>
       <option value="glm">智谱 GLM（OpenAI兼容）</option>
       <option value="glm_anthropic">智谱 GLM（Anthropic格式，推荐）</option>
       <option value="deepseek">DeepSeek（性价比高）</option>
@@ -632,17 +633,99 @@ function dvShowResult(){
     <span style="color:var(--muted);font-size:12px">解读基于牌义自动拼合，仅作学习参考。</span>
     </div>
     <div style="text-align:center;margin-top:14px">
-      <button id="dvAI" class="btn">✨ AI 深度解读</button>
+      <button id="dvCopy" class="btn">📋 复制AI解牌提示词</button>
+      <button id="dvAI" class="btn" style="margin-left:10px">✨ AI 深度解读</button>
+      <div id="dvCopyTip" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
       <div id="dvAIOut" style="margin-top:12px;text-align:left;background:rgba(214,175,91,.08);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.7;display:none;white-space:pre-wrap"></div>
     </div>`;
   document.getElementById('dvAI').onclick=dvAIInterpret;
 }
 dvShuffle.onclick=dvShuffleDeck;
 
+/* --- 一键复制AI解牌提示词 --- */
+function dvBuildPrompt(){
+  if(!dvPicks || dvPicks.length===0) return '';
+  const q=document.getElementById('dvQ').value.trim()||'（用户未写具体问题，由解读师基于牌面给出普遍性指引）';
+  const cardDesc=dvPicks.map((p,i)=>{
+    const c=p.card;
+    const mean=p.upr?c.u:c.r||'（逆位含义需结合上下文）';
+    const key=(c.k&&c.k.length)?c.k.join('、'):'—';
+    return `${i+1}. ${DV_POS[i]}｜${c.n} ${c.e}｜${p.upr?'正位':'逆位'}\n   关键词：${key}\n   牌义：${mean}`;
+  }).join('\n\n');
+  return `你是一位温和、清晰、尊重用户自主性的塔罗解读师。请只输出最终解读，不要展示思考过程，也不要用通用牌义替代对用户问题的回答。
+
+【用户问题】
+${q}
+
+【牌阵】
+三牌阵 · 现状 / 阻碍 / 建议（共 3 张牌）
+牌阵用途：沿着事情的现状、阻碍与建议，看见一段连续的心理脉络。
+
+【抽牌结果】
+${cardDesc}
+
+【本次解读的唯一焦点】
+1. 先用一句话识别用户真正想解决的核心问题，区分它属于关系、工作、选择、自我状态还是其他类型；后续每一部分都必须围绕这个焦点。
+2. 遵守问题中的对象、时间范围、情境和限制条件。若信息不足，说明"牌面不足以支持明确结论"，再给出条件化判断。
+3. 只使用用户提供的信息和牌面象征。不要编造人物姓名、对方想法、具体事件、疾病、财务事实或用户未提及的隐私。无法知道的内容，要明确写"无法由牌面确认"。
+4. 若问题存在歧义，先给出你采用的最合理解释，并在这个解释下作答，不要反问用户或要求补充信息。
+
+【回答结构】
+### 一、直接回应
+用 2–4 句话直接回答用户的问题。第一句先给核心结论，随后说明牌面为何支持这个结论。
+### 二、逐张牌与牌位的对应
+严格按照上面的牌阵顺序逐张回答。每张牌都使用以下结构：
+- 牌面与位置：这张牌在该牌位上呈现什么核心状态。
+- 问题关联：它具体说明了用户问题中的哪一部分。
+- 正逆位差异：只说与当前问题相关的差异，不罗列无关牌义。
+- 可核对线索：给出一条用户可以在现实感受、行为或关系中核对的迹象。
+### 三、牌与牌之间的关系
+指出 2–3 组呼应、矛盾、因果线索或转折，说明它们合在一起后，如何改变对问题的理解。不要逐张重复前面的内容。
+### 四、对问题的完整回答
+直接回扣用户原问题，给出有层次的结论：已经明确的部分是什么；仍不确定或取决于行动的部分是什么；如果继续当前方向，最值得留意的趋势是什么。若适合回答"倾向/不倾向"，请使用"更偏向……，但并非确定结果"这样的表达。
+### 五、接下来 7 天可以做什么
+给出 2–3 条具体、低压力、可由用户自主执行的动作。每条都要包含：做什么、在什么情境下做、做完后观察什么。不要使用"顺其自然""相信宇宙""跟随能量"等空泛建议。
+### 六、留给用户的一句话
+用一句简短、温和的话，帮助用户把注意力带回自己的感受、边界和选择。
+
+【表达要求】
+- 使用简体中文和清晰的短段落，重要判断可以用粗体标出。
+- 牌面表示的是趋势、心理动力和可观察的可能性，不是注定发生的结果。
+- 不制造恐惧，不使用"必然""一定会""命中注定"等绝对化表达，不威胁用户必须采取某种行动。
+- 不替代医疗、法律、心理或投资等专业意见；涉及这些领域时，明确建议用户寻求合适的专业支持。
+- 不要大段解释塔罗历史或通用牌义；每个判断都要能回到"这与用户的问题有什么关系"。
+
+请直接开始解读。`;
+}
+function dvCopyPrompt(){
+  const tip=document.getElementById('dvCopyTip');
+  if(!dvPicks || dvPicks.length===0){
+    tip.textContent='⚠️ 先抽完 3 张牌再来复制'; return;
+  }
+  const prompt=dvBuildPrompt();
+  const done=function(){ tip.textContent='✅ 已复制！粘贴到任意 AI（豆包/DeepSeek/GPT/Claude）即可解读'; };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(done).catch(function(){
+      dvFallbackCopy(prompt); done();
+    });
+  }else{
+    dvFallbackCopy(prompt); done();
+  }
+}
+function dvFallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+document.getElementById('dvCopy').onclick=dvCopyPrompt;
+
 /* --- AI 配置 --- */
 const AI_KEY='tarot_ai_cfg';
 /* 服务商预设：apiType=openai 走 /chat/completions，apiType=anthropic 走 /v1/messages */
 const PRESETS={
+  local:          {apiType:'openai',      base:'http://localhost:3000/api',                      model:'glm-4-flash'},
   glm:            {apiType:'openai',      base:'https://open.bigmodel.cn/api/paas/v4',           model:'glm-4-flash'},
   glm_anthropic:  {apiType:'anthropic',   base:'https://open.bigmodel.cn/api/anthropic',         model:'glm-4-flash'},
   deepseek:       {apiType:'openai',      base:'https://api.deepseek.com/v1',                    model:'deepseek-chat'},
@@ -731,7 +814,7 @@ async function dvAIInterpret(){
       });
       if(!r.ok){ const t=await r.text(); throw new Error('HTTP '+r.status+'：'+t.slice(0,200)); }
       const j=await r.json();
-      out.textContent=(j.content[0].text||'').trim();
+      out.textContent=(j.content[0].text||'').trim(); dvSaveHistory(q, dvPicks.map(p=>({n:p.card.n,upr:p.upr})), out.textContent);
     }else{
       r=await fetch(cfg.base+'/chat/completions',{
         method:'POST',
@@ -740,7 +823,7 @@ async function dvAIInterpret(){
       });
       if(!r.ok){ const t=await r.text(); throw new Error('HTTP '+r.status+'：'+t.slice(0,200)); }
       const j=await r.json();
-      out.textContent=j.choices[0].message.content.trim();
+      out.textContent=j.choices[0].message.content.trim(); dvSaveHistory(q, dvPicks.map(p=>({n:p.card.n,upr:p.upr})), out.textContent);
     }
   }catch(err){
     out.textContent='⚠️ 调用失败：'+err.message+'\n\n可能原因：1) 接口地址/Key/模型填错；2) 浏览器跨域(CORS)拦截。';
@@ -748,6 +831,71 @@ async function dvAIInterpret(){
 }
 
 render(); dvShuffleDeck();
+function dvOpenModal(html){
+  var m = document.getElementById('modal');
+  m.innerHTML = '<button class="close" onclick="document.getElementById(\'ovl\').classList.remove(\'on\')">×</button>' + html;
+  document.getElementById('ovl').classList.add('on');
+}
+/* --- 历史记录 --- */
+function dvSaveHistory(question, cards, reading){
+  try{
+    var h = JSON.parse(localStorage.getItem('tarot_history')||'[]');
+    h.unshift({time:new Date().toLocaleString('zh-CN'), q:question, cards:cards, reading:reading});
+    if(h.length>50) h=h.slice(0,50);
+    localStorage.setItem('tarot_history', JSON.stringify(h));
+  }catch(e){}
+}
+function dvShowHistory(){
+  var h = JSON.parse(localStorage.getItem('tarot_history')||'[]');
+  if(!h.length){ alert('还没有历史记录，先去抽一次牌吧～'); return; }
+  var html = '<div style="max-height:70vh;overflow-y:auto">';
+  h.forEach(function(item,i){
+    var cards = item.cards.map(function(c){return c.n+(c.upr?'(正)':'(逆)')}).join(' · ');
+    html += '<div style="padding:12px;border-bottom:1px solid var(--line);cursor:pointer" onclick="dvShowHistItem('+i+')">';
+    html += '<div style="color:var(--gold2);font-size:13px">'+item.time+'</div>';
+    html += '<div style="margin:4px 0;font-size:14px">'+item.q+'</div>';
+    html += '<div style="color:var(--muted);font-size:12px">'+cards+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="text-align:center;margin-top:12px;display:flex;gap:10px;justify-content:center"><button class="btn" onclick="dvExportHist()">📥 导出为Markdown</button><button class="btn ghost" onclick="dvClearHist()">清空历史</button></div>';
+  dvOpenModal(html);
+}
+function dvShowHistItem(i){
+  var h = JSON.parse(localStorage.getItem('tarot_history')||'[]');
+  var item = h[i];
+  if(!item) return;
+  var cards = item.cards.map(function(c,j){return '<b>'+DV_POS[j]+'位：</b>'+c.n+(c.upr?'（正位）':'（逆位）')}).join('<br>');
+  var html = '<div style="margin-bottom:12px"><b style="color:var(--gold2)">'+item.time+'</b><br><b>问题：</b>'+item.q+'</div>';
+  html += '<div style="background:rgba(0,0,0,.15);padding:10px;border-radius:8px;margin-bottom:12px">'+cards+'</div>';
+  html += '<div style="white-space:pre-wrap">'+item.reading+'</div>';
+  dvOpenModal(html);
+}
+function dvExportHist(){
+  var h = JSON.parse(localStorage.getItem('tarot_history')||'[]');
+  if(!h.length){ alert('没有可导出的记录'); return; }
+  var md = '# 塔罗占卜历史记录' + '\n\n';
+  md += '> 共 ' + h.length + ' 条记录 · 导出时间：' + new Date().toLocaleString('zh-CN') + '\n\n';
+  h.forEach(function(item,i){
+    md += '---\n\n## ' + (i+1) + '. ' + item.q + '\n\n';
+    md += '**时间：** ' + item.time + '\n\n';
+    md += '**三张牌：**\n\n';
+    item.cards.forEach(function(c,j){
+      md += '- ' + DV_POS[j] + '位：' + c.n + '（' + (c.upr?'正位':'逆位') + '）\n';
+    });
+    md += '\n**AI解读：**\n\n' + item.reading + '\n\n';
+  });
+  var blob = new Blob([md], {type:'text/markdown;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '塔罗历史记录_' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+function dvClearHist(){
+  if(confirm('确定清空所有历史记录？')){ localStorage.removeItem('tarot_history'); dvShowHistory(); }
+}
+document.getElementById('dvHistBtn').onclick = dvShowHistory;
+
 </script>
 </body>
 </html>
