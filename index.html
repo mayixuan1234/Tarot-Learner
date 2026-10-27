@@ -639,6 +639,7 @@ function dvShowResult(){
       <div id="dvAIOut" style="margin-top:12px;text-align:left;background:rgba(214,175,91,.08);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.7;display:none;white-space:pre-wrap"></div>
     </div>`;
   document.getElementById('dvAI').onclick=dvAIInterpret;
+  document.getElementById('dvCopy').onclick=dvCopyPrompt;
 }
 dvShuffle.onclick=dvShuffleDeck;
 
@@ -719,7 +720,6 @@ function dvFallbackCopy(text){
   try{ document.execCommand('copy'); }catch(e){}
   document.body.removeChild(ta);
 }
-document.getElementById('dvCopy').onclick=dvCopyPrompt;
 
 /* --- AI 配置 --- */
 const AI_KEY='tarot_ai_cfg';
